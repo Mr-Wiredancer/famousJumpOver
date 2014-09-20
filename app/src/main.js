@@ -26,6 +26,10 @@ define(function(require, exports, module) {
     mainContext.setPerspective(1000);
 
     var r = 100;
+    var rPlayer = 10;
+    var rObstacle = 10;
+    var jumpHeight = 80;
+    var jumpDuration = 300;
     var initTime = Date.now();
 
     // the sphere
@@ -51,7 +55,7 @@ define(function(require, exports, module) {
 
     // a circle as obstacle
     var obstacle = new Surface({
-        size: [10, 10],
+        size: [2*rObstacle, 2*rObstacle],
         properties: {
             borderRadius: '50%',
             backgroundColor: 'red'
@@ -67,8 +71,8 @@ define(function(require, exports, module) {
         transform: function() {
             theta = theta+angularVelocityObstacle;
 
-            var x = Math.cos(theta)*r;
-            var y = Math.sin(theta)*r;
+            var x = Math.cos(theta)*(r+rObstacle);
+            var y = Math.sin(theta)*(r+rObstacle);
             return Transform.translate(x, y, 0);
         }
     });
@@ -80,20 +84,20 @@ define(function(require, exports, module) {
     // ************** player ***************
     var height = new Transitionable(0);
 
-    var angularVelocityPlayer = -0.01;
+    var angularVelocityPlayer = -0.03;
     var theta2 = 1.7; //随便填得
 
     var playerMod = new Modifier({
         transform: function() {
             theta2 = theta2 + angularVelocityPlayer;
             // theta2 = -1.7;
-            var x = Math.cos(theta2)*(r+height.get());
-            var y = Math.sin(theta2)*(r+height.get());
+            var x = Math.cos(theta2)*(r+rPlayer+height.get());
+            var y = Math.sin(theta2)*(r+rPlayer+height.get());
 
             // 碰撞检测，应该利用physics engine得碰撞，不过这个是个quick hack
-            var x2 = Math.cos(theta)*r;
-            var y2 = Math.sin(theta)*r;
-            if (Math.pow(x2-x, 2)+Math.pow(y2-y, 2) < 25) {
+            var x2 = Math.cos(theta)*(r+rObstacle);
+            var y2 = Math.sin(theta)*(r+rObstacle);
+            if (Math.pow(x2-x, 2)+Math.pow(y2-y, 2) < Math.pow(rPlayer+rObstacle, 2)) {
                 alert('boom!');
             }
 
@@ -102,7 +106,7 @@ define(function(require, exports, module) {
     });
 
     var player = new Surface({
-        size: [10, 10],
+        size: [2*rPlayer, 2*rPlayer],
         properties: {
             borderRadius: '50%',
             backgroundColor: 'green'
@@ -118,15 +122,15 @@ define(function(require, exports, module) {
     Engine.on('keypress', function(e) {
         if (e.charCode === 32) {
             console.log('set');
-            height.set(40, {curve: 'custom1', duration: 400}, function() {
-                height.set(0, {curve: 'custom2', duration: 400});
+            height.set(jumpHeight, {curve: 'custom1', duration: jumpDuration}, function() {
+                height.set(0, {curve: 'custom2', duration: jumpDuration});
             });
         }
     });
 
     Engine.on('touchend', function(e) {
-        height.set(40, {curve: 'custom1', duration: 400}, function() {
-            height.set(0, {curve: 'custom2', duration: 400});
+        height.set(jumpHeight, {curve: 'custom1', duration: jumpDuration}, function() {
+            height.set(0, {curve: 'custom2', duration: jumpDuration});
         });
     });    
 });
