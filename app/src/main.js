@@ -9,18 +9,12 @@ define(function(require, exports, module) {
     var Surface = require('famous/core/Surface');
     var Timer = require('famous/utilities/Timer');
     var Transitionable = require('famous/transitions/Transitionable');
-    var SpringTransition = require('famous/transitions/SpringTransition');
-    var WallTransition = require('famous/transitions/WallTransition');
-    var SnapTransition = require('famous/transitions/SnapTransition');
 
-    Transitionable.registerMethod('spring', SpringTransition);
-    Transitionable.registerMethod('wall', WallTransition);
-    Transitionable.registerMethod('snap', SnapTransition);
 
+    var TweenTransition = require('famous/transitions/TweenTransition');
 
     var customCurve1 = function(t){ return 1-Math.pow(t-1,2); };
     var customCurve2 = function(t){ return Math.pow(t, 2); };
-    var TweenTransition = require('famous/transitions/TweenTransition');
     TweenTransition.registerCurve('custom1', customCurve1);
     TweenTransition.registerCurve('custom2', customCurve2);
 
@@ -32,7 +26,9 @@ define(function(require, exports, module) {
     mainContext.setPerspective(1000);
 
     var r = 100;
+    var initTime = Date.now();
 
+    // the sphere
     var circle = new Surface({
         size: [2*r, 2*r],
         properties: {
@@ -41,6 +37,19 @@ define(function(require, exports, module) {
         }
     });
 
+    var centerMod = new Modifier({
+        origin: [.5, .5],
+        align: [.5, .5]
+    });
+    var center = mainContext.add(centerMod);    // reference point of center 
+
+    center.add(circle);
+
+    //*********** obstacle *********************
+    var angularVelocityObstacle = 0.01;
+    var theta = 0;    
+
+    // a circle as obstacle
     var obstacle = new Surface({
         size: [10, 10],
         properties: {
@@ -49,15 +58,7 @@ define(function(require, exports, module) {
         }
     });
 
-    var centerMod = new Modifier({
-        origin: [.5, .5],
-        align: [.5, .5]
-    });
-
-    var angularVelocityObstacle = 0.01;
-    var initTime = Date.now();
-    var theta = 0;
-
+    // 每隔两秒随机修改障碍物得速度
     Timer.every(function() {
         angularVelocityObstacle = (Math.random()+1)*5*0.01
     }, 120);
@@ -72,18 +73,15 @@ define(function(require, exports, module) {
         }
     });
 
-    var center = mainContext.add(centerMod);
-
-    center.add(circle);
-
     center.add(obstacleMod).add(new Modifier({
         origin: [.5, .5]
     })).add(obstacle);
 
+    // ************** player ***************
     var height = new Transitionable(0);
 
     var angularVelocityPlayer = -0.01;
-    var theta2 = 1.7;
+    var theta2 = 1.7; //随便填得
 
     var playerMod = new Modifier({
         transform: function() {
@@ -92,12 +90,11 @@ define(function(require, exports, module) {
             var x = Math.cos(theta2)*(r+height.get());
             var y = Math.sin(theta2)*(r+height.get());
 
+            // 碰撞检测，应该利用physics engine得碰撞，不过这个是个quick hack
             var x2 = Math.cos(theta)*r;
             var y2 = Math.sin(theta)*r;
-
             if (Math.pow(x2-x, 2)+Math.pow(y2-y, 2) < 25) {
                 alert('boom!');
-                // console.log('boom!');
             }
 
             return Transform.translate(x, y, 0);
@@ -116,6 +113,8 @@ define(function(require, exports, module) {
         origin: [.5, .5]
     })).add(player);
 
+
+    // 操作，支持空格或屏幕触碰
     Engine.on('keypress', function(e) {
         if (e.charCode === 32) {
             console.log('set');
